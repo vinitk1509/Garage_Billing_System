@@ -44,6 +44,26 @@ public class CustomerDAO {
         }
         return generatedId;
     }
+    public static Customer getCustomerById(int id) {
+        String query = "SELECT * FROM customers WHERE id = ?";
+        try (Connection con = DbConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setInt(1, id);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return new Customer(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("phone"),
+                        rs.getString("email")
+                );
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     public List<Customer> getAllCustomers() throws SQLException {
         List<Customer> customers = new ArrayList<>();

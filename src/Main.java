@@ -8,87 +8,143 @@ import entity.Service;
 
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        CustomerDAO customerDAO = new CustomerDAO();
-        ServiceDAO serviceDAO = new ServiceDAO();
-        BillDAO billDAO = new BillDAO();
+    private static final Scanner scanner = new Scanner(System.in);
+    private static final CustomerDAO customerDAO = new CustomerDAO();
+    private static final ServiceDAO serviceDAO = new ServiceDAO();
+    private static final BillDAO billDAO = new BillDAO();
 
-        try {
-            // ---------- CUSTOMER ----------
-            System.out.print("Enter customer name: ");
-            String name = scanner.nextLine();
-            System.out.print("Enter contact (phone): ");
-            String phone = scanner.nextLine();
-            System.out.print("Enter email: ");
-            String email = scanner.nextLine();
+    public static void main(String[] args) throws SQLException {
+        while (true) {
+            System.out.println("\n=== Garage Billing System ===");
+            System.out.println("1. Add New Customer");
+            System.out.println("2. List All Customers");
+            System.out.println("3. List Services");
+            System.out.println("4. Generate Bill");
+            System.out.println("5. Exit");
+            System.out.print("Choose an option: ");
 
-            Customer customer = new Customer(name, phone, email);
-            int customerId = customerDAO.addCustomer(customer); // returns generated ID
-            if (customerId == -1) {
-                System.out.println("❌ Failed to add customer.");
-                return;
-            }
-            System.out.println("✅ Customer added with ID: " + customerId);
+            int choice = getIntInput();
 
-            // ---------- SERVICES ----------
-            List<Service> services = serviceDAO.getAllServices();
-            System.out.println("\nAvailable Services:");
-            for (int i = 0; i < services.size(); i++) {
-                Service s = services.get(i);
-                System.out.printf("%d. %s - ₹%.2f%n", i + 1, s.getName(), s.getCost());
-            }
-
-            System.out.print("\nEnter number of services used: ");
-            int count = scanner.nextInt();
-            List<BillItem> billItems = new ArrayList<>();
-            double total = 0;
-
-            for (int i = 0; i < count; i++) {
-                System.out.print("Enter service number: ");
-                int choice = scanner.nextInt();
-                if (choice < 1 || choice > services.size()) {
-                    System.out.println("Invalid selection, try again.");
-                    i--;
-                    continue;
+            switch (choice) {
+                case 1 -> addCustomer();
+                case 2 -> listCustomers();
+                case 3 -> listServices();
+                case 4 -> generateBill();
+                case 5 -> {
+                    System.out.println("Exiting... Goodbye!");
+                    System.exit(0);
                 }
-                Service selected = services.get(choice - 1);
-                total += selected.getCost();
-                billItems.add(new BillItem(0, selected.getId(), selected.getCost())); // billId placeholder
+                default -> System.out.println("Invalid choice. Please try again.");
             }
+        }
+    }
 
-            // ---------- BILL CREATION ----------
-            Timestamp now = new Timestamp(System.currentTimeMillis());
-            Bill bill = new Bill(customerId, now, total);
-            int billId = billDAO.addBill(bill);
-            if (billId == -1) {
-                System.out.println("❌ Failed to create bill.");
-                return;
+    private static void addCustomer() {
+        System.out.print("Enter customer name: ");
+        String name = scanner.nextLine();
+
+        System.out.print("Enter phone number: ");
+        String phone = scanner.nextLine();
+
+        System.out.print("Enter email: ");
+        String email = scanner.nextLine();
+
+        Customer customer = new Customer(name, phone, email);
+        customerDAO.addCustomer(customer);
+        System.out.println("Customer added successfully.");
+    }
+
+    private static void listCustomers() throws SQLException {
+        List<Customer> customers = customerDAO.getAllCustomers();
+        System.out.println("\n--- All Customers ---");
+        for (Customer c : customers) {
+            System.out.println(c);
+        }
+    }
+
+    private static void listServices() throws SQLException {
+        List<Service> services = serviceDAO.getAllServices();
+        System.out.println("\n--- Available Services ---");
+        for (Service s : services) {
+            System.out.println(s);
+        }
+    }
+
+    private static void generateBill() throws SQLException {
+        listCustomers();
+        System.out.print("Enter customer ID: ");
+        int customerId = getIntInput();
+
+        List<Service> services = serviceDAO.getAllServices();
+        if (services.isEmpty()) {
+            System.out.println("No services available.");
+            return;
+        }
+
+        List<BillItem> billItems = new ArrayList<>();
+        double totalCost = 0;
+
+        // 1. Show available services ONCE
+        System.out.println("\n--- Available Services ---");
+        List<Service> allServices = ServiceDAO.getAllServices(); // ✅ returns List<Service>
+        for (Service s : allServices) {
+            System.out.println(s.getId() + " - " + s.getName());
+        }
+
+
+// 2. Now accept multiple IDs without repeating the list
+        while (true) {
+            System.out.print("Enter service ID to add to bill (or 0 to finish): ");
+            int serviceId = scanner.nextInt();
+
+            if (serviceId == 0) break;
+
+            Service selected = ServiceDAO.getServiceById(serviceId);
+            if (selected == null) {
+                System.out.println("Invalid service ID. Try again.");
+            } else {
+                totalCost += selected.getCost();
+                billItems.add(new BillItem(0, serviceId, selected.getCost()));
             }
+        }
 
-            // ---------- ASSIGN BILL ID TO ITEMS AND SAVE ----------
-            for (BillItem item : billItems) {
-                item.setBillId(billId);
+
+        if (billItems.isEmpty()) {
+            System.out.println("No items added to bill.");
+            return;
+        }
+
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        Bill bill = new Bill(customerId, timestamp, totalCost);
+        int billId = billDAO.addBill(bill);
+
+        for (BillItem item : billItems) {
+            item.setBillId(billId);
+        }
+        billDAO.addBillItems(billId, billItems);
+
+        Customer customer = CustomerDAO.getCustomerById(customerId); // make sure this method exists
+
+        System.out.println("\n✅ Bill generated successfully with ID: " + billId);
+        System.out.println("Customer Details:");
+        System.out.println("Name: " + customer.getName());
+        System.out.println("Phone: " + customer.getPhone());
+        System.out.println("Email: " + customer.getEmail());
+        System.out.println("Total: ₹" + totalCost);
+
+    }
+
+    private static int getIntInput() {
+        while (true) {
+            try {
+                String input = scanner.nextLine().trim();
+                return Integer.parseInt(input);
+            } catch (NumberFormatException e) {
+                System.out.print("Invalid input. Enter a number: ");
             }
-            billDAO.addBillItems(billId, billItems);
-
-            // ---------- SUMMARY ----------
-            System.out.println("\n✅ Bill created successfully!");
-            System.out.println("Bill ID: " + billId);
-            System.out.println("Customer ID: " + customerId);
-            System.out.println("Services:");
-            for (BillItem bi : billItems) {
-                System.out.println("  - Service ID: " + bi.getServiceId() + ", Cost: ₹" + bi.getCost());
-            }
-            System.out.printf("Total Amount: ₹%.2f%n", total);
-
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 }

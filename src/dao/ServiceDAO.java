@@ -48,4 +48,26 @@ public class ServiceDAO {
 
         return services;
     }
+
+    public static Service getServiceById(int serviceId) {
+        String sql = "SELECT * FROM services WHERE id = ?";
+        try (Connection conn = DbConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, serviceId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return new Service(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getDouble("price")
+                );
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }
