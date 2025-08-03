@@ -21,27 +21,27 @@ public class CustomerDAO {
 //        conn.close();
 //    }
 
-    public static int addCustomer(Customer customer) throws SQLException {
-        Connection conn = DbConfig.getConnection();
-        String sql = "INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)";
-        PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-        ps.setString(1, customer.getName());
-        ps.setString(2, customer.getPhone());
-        ps.setString(3, customer.getEmail());
-        ps.executeUpdate();
-
-        ResultSet rs = ps.getGeneratedKeys();
+    public static int addCustomer(Customer customer) {
         int generatedId = -1;
-        if (rs.next()) {
-            generatedId = rs.getInt(1); // Get generated ID from DB
-            customer.setId(generatedId); // Save it in the Customer object
-            System.out.println("✅ Generated Customer ID: " + generatedId);
+        String sql = "INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)";
+        try (Connection conn = DbConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            stmt.setString(1, customer.getName());
+            stmt.setString(2, customer.getPhone());
+            stmt.setString(3, customer.getEmail());
+
+            int rowsInserted = stmt.executeUpdate();
+            if (rowsInserted > 0) {
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    generatedId = rs.getInt(1);
+                    System.out.println("✅ Generated Customer ID: " + generatedId);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-
-        rs.close();
-        ps.close();
-        conn.close();
-
         return generatedId;
     }
 

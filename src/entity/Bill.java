@@ -1,56 +1,42 @@
 package entity;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 public class Bill {
-
-    private int id;
-    private int vehicleId;
-    private List<Integer> serviceIds;
+    private int id; // auto-generated
+    private int customerId;
+    private Timestamp date;
     private double totalCost;
+    private List<BillItem> items; // optional, can be populated later
 
-    public Bill(int vehicleId, List<Integer> serviceIds, double totalCost) {
-        this.vehicleId = vehicleId;
-        this.serviceIds = serviceIds;
+    // Constructor before ID exists
+    public Bill(int customerId, Timestamp date, double totalCost) {
+        this.customerId = customerId;
+        this.date = date;
         this.totalCost = totalCost;
     }
 
-    public Bill(int id, int vehicleId, List<Integer> serviceIds, double totalCost) {
+    // Full constructor
+    public Bill(int id, int customerId, Timestamp date, double totalCost) {
         this.id = id;
-        this.vehicleId = vehicleId;
-        this.serviceIds = serviceIds;
+        this.customerId = customerId;
+        this.date = date;
         this.totalCost = totalCost;
     }
 
-    public int getId() {
-        return id;
-    }
+    // Getters / setters
+    public int getId() { return id; }
+    public int getCustomerId() { return customerId; }
+    public Timestamp getDate() { return date; }
+    public double getTotalCost() { return totalCost; }
+    public List<BillItem> getItems() { return items; }
+    public void setItems(List<BillItem> items) { this.items = items; }
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    public void setId(int id) { this.id = id; }
 
-    public int getVehicleId() {
-        return vehicleId;
-    }
-
-    public void setVehicleId(int vehicleId) {
-        this.vehicleId = vehicleId;
-    }
-
-    public List<Integer> getServiceIds() {
-        return serviceIds;
-    }
-
-    public void setServiceIds(List<Integer> serviceIds) {
-        this.serviceIds = serviceIds;
-    }
-
-    public double getTotalCost() {
-        return totalCost;
-    }
-
-    public void setTotalCost(double totalCost) {
-        this.totalCost = totalCost;
+    @Override
+    public String toString() {
+        return "Bill ID: " + id + ", Customer ID: " + customerId + ", Date: " + date + ", Total: ₹" + totalCost;
     }
 }
