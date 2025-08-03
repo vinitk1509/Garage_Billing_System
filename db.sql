@@ -37,3 +37,30 @@ INSERT INTO services (name, price) VALUES
 ('Car Wash', 400.00),
 ('AC Service', 1800.00);
 
+
+CREATE TABLE bills (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    customer_id INT,
+    vehicle_id INT,
+    date TIMESTAMP,
+    total_cost DOUBLE,
+    FOREIGN KEY (customer_id) REFERENCES customers(id),
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
+);
+
+CREATE TABLE bill_items (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    bill_id INT,
+    service_id INT,
+    cost DOUBLE,
+    FOREIGN KEY (bill_id) REFERENCES bills(id),
+    FOREIGN KEY (service_id) REFERENCES services(id)
+);
+
+
+create table bill_services(
+bill_id int,
+service_id int,
+foreign key (bill_id) references bill(id),
+foreign key (service_id) references services(id)
+);
